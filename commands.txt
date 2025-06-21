@@ -1,0 +1,8 @@
+Commands to read the raw output of rtsp on client (for debug purposes):
+gst-launch-1.0 rtspsrc location=rtsp://192.168.1.104:8554/rearcam latency=0 ! rtph264depay ! avdec_h264 ! videoconvert ! autovideosink sync=false
+gst-launch-1.0 rtspsrc location=rtsp://192.168.1.104:8554/raw360 latency=0 ! rtph264depay ! avdec_h264 ! videoconvert ! autovideosink sync=false
+	
+when implemented:
+gst-launch-1.0 rtspsrc location=rtsp://192.168.1.104:8554/frontcamcam latency=0 ! rtph264depay ! avdec_h264 ! videoconvert ! autovideosink sync=false
+gst-launch-1.0 rtspsrc location=rtsp://192.168.1.104:8554/dynamic360 latency=0 ! rtph264depay ! avdec_h264 ! videoconvert ! autovideosink sync=false
+	
