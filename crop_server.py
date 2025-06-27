@@ -1,5 +1,9 @@
+#!/usr/bin/env python3
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import json
+import os
+
+CROP_FILE = "crop.json"
 
 class CropHandler(BaseHTTPRequestHandler):
     def do_POST(self):
@@ -11,16 +15,27 @@ class CropHandler(BaseHTTPRequestHandler):
         content_len = int(self.headers.get('Content-Length', 0))
         data = self.rfile.read(content_len)
         try:
-            crop = json.loads(data)
-            with open("crop.json", "w") as f:
-                json.dump(crop, f)
+            incoming_crop = json.loads(data)
+
+            # Load existing crop data if exists
+            if os.path.exists(CROP_FILE):
+                with open(CROP_FILE, "r") as f:
+                    full_crop = json.load(f)
+            else:
+                full_crop = {}
+
+            full_crop.update(incoming_crop)
+
+            with open(CROP_FILE, "w") as f:
+                json.dump(full_crop, f)
+
             self.send_response(200)
             self.end_headers()
             self.wfile.write(b"OK\n")
         except Exception as e:
             self.send_response(400)
             self.end_headers()
-            self.wfile.write(b"Invalid crop\n")
+            self.wfile.write(f"Invalid crop: {e}".encode())
 
     def log_message(self, format, *args):
         return
