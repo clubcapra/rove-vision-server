@@ -9,13 +9,13 @@ from gi.repository import Gst, GstRtspServer, GObject
 # === Configuration ===
 CAMERAS = {
     "rearcam": {
-        "device": "/dev/v4l/by-id/usb-Arducam_Technology_Co.__Ltd._Arducam_USB_Camera-video-index2",
+        "device": "/dev/video2", # "/dev/v4l/by-id/usb-Arducam_Technology_Co.__Ltd._Arducam_USB_Camera-video-index2",
         "width": 1920,
         "height": 1080,
         "fps": 30
     },
     "frontcam": {
-        "device": "/dev/v4l/by-id/usb-Arducam_Technology_Co.__Ltd._Arducam_USB_Camera-video-index0",
+        "device": "/dev/video6", # "/dev/v4l/by-id/usb-Arducam_Technology_Co.__Ltd._Arducam_USB_Camera-video-index0",
         "width": 1920,
         "height": 1080,
         "fps": 30
