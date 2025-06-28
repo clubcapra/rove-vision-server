@@ -39,7 +39,7 @@ BITRATE_PLACEHOLDER = 2000000
 Gst.init(None)
 
 class ZEDRtspFactory(GstRtspServer.RTSPMediaFactory):
-    def __init__(self, width=672, height=376, fps=15):
+    def __init__(self, width=1280, height=720, fps=30):
         super().__init__()
         self.width = width
         self.height = height
@@ -48,27 +48,28 @@ class ZEDRtspFactory(GstRtspServer.RTSPMediaFactory):
         self.duration = Gst.util_uint64_scale_int(1, Gst.SECOND, self.fps)
         self.set_shared(True)
 
-        # Initialize ZED
+        # Initialize ZED camera
         self.zed = sl.Camera()
         init_params = sl.InitParameters()
-        init_params.camera_resolution = sl.RESOLUTION.VGA
+        init_params.camera_resolution = sl.RESOLUTION.HD720
         init_params.camera_fps = self.fps
         status = self.zed.open(init_params)
         if status != sl.ERROR_CODE.SUCCESS:
-            print("ZED camera failed to open:", status)
-            self.zed = None  # Prevent use
+            print("❌ ZED camera failed to open:", status)
+            self.zed = None
         else:
             self.image = sl.Mat()
+            print("✅ ZED camera initialized")
 
     def do_create_element(self, url):
         if self.zed is None:
-            print("❌ No ZED camera initialized")
+            print("❌ No ZED camera available")
             return None
 
         pipeline = f"""
         appsrc name=source is-live=true block=true format=TIME caps=video/x-raw,format=BGR,width={self.width},height={self.height},framerate={self.fps}/1 !
         videoconvert !
-        x264enc tune=zerolatency bitrate=2000 speed-preset=ultrafast !
+        x264enc tune=zerolatency bitrate=4000 speed-preset=ultrafast !
         rtph264pay config-interval=1 name=pay0 pt=96
         """
         return Gst.parse_launch(pipeline)
@@ -82,7 +83,7 @@ class ZEDRtspFactory(GstRtspServer.RTSPMediaFactory):
         if self.zed.grab() == sl.ERROR_CODE.SUCCESS:
             self.zed.retrieve_image(self.image, sl.VIEW.LEFT)
             raw = self.image.get_data()
-            frame = raw[:, :self.width, :3].copy()
+            frame = raw[:, :self.width, :3].copy()  # Remove padding + drop alpha
             data = frame.tobytes()
 
             buf = Gst.Buffer.new_allocate(None, len(data), None)
@@ -95,7 +96,6 @@ class ZEDRtspFactory(GstRtspServer.RTSPMediaFactory):
             retval = self.appsrc.emit("push-buffer", buf)
             if retval != Gst.FlowReturn.OK:
                 print(f"Push buffer error: {retval}")
-
 
 class MultiCamRTSPServer:
     def __init__(self):
