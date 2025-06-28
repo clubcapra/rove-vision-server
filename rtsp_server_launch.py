@@ -1,10 +1,19 @@
 #!/usr/bin/env python3
 
 import gi
+import cv2
+import numpy as np
+import time
+
+import pyzed.sl as sl
+
 gi.require_version('Gst', '1.0')
+gi.require_version('GstApp', '1.0')
 gi.require_version('GstRtspServer', '1.0')
 
-from gi.repository import Gst, GstRtspServer, GObject
+from gi.repository import Gst, GstApp, GstRtspServer, GObject
+
+Gst.init(None)
 
 # === Configuration ===
 CAMERAS = {
@@ -29,6 +38,65 @@ BITRATE_PLACEHOLDER = 2000000
 # === RTSP Server Setup ===
 Gst.init(None)
 
+class ZEDRtspFactory(GstRtspServer.RTSPMediaFactory):
+    def __init__(self, width=672, height=376, fps=15):
+        super().__init__()
+        self.width = width
+        self.height = height
+        self.fps = fps
+        self.number_frames = 0
+        self.duration = Gst.util_uint64_scale_int(1, Gst.SECOND, self.fps)
+        self.set_shared(True)
+
+        # Initialize ZED
+        self.zed = sl.Camera()
+        init_params = sl.InitParameters()
+        init_params.camera_resolution = sl.RESOLUTION.VGA
+        init_params.camera_fps = self.fps
+        status = self.zed.open(init_params)
+        if status != sl.ERROR_CODE.SUCCESS:
+            print("ZED camera failed to open:", status)
+            self.zed = None  # Prevent use
+        else:
+            self.image = sl.Mat()
+
+    def do_create_element(self, url):
+        if self.zed is None:
+            print("❌ No ZED camera initialized")
+            return None
+
+        pipeline = f"""
+        appsrc name=source is-live=true block=true format=TIME caps=video/x-raw,format=BGR,width={self.width},height={self.height},framerate={self.fps}/1 !
+        videoconvert !
+        x264enc tune=zerolatency bitrate=2000 speed-preset=ultrafast !
+        rtph264pay config-interval=1 name=pay0 pt=96
+        """
+        return Gst.parse_launch(pipeline)
+
+    def do_configure(self, rtsp_media):
+        self.appsrc = rtsp_media.get_element().get_child_by_name("source")
+        if self.appsrc:
+            self.appsrc.connect("need-data", self.on_need_data)
+
+    def on_need_data(self, src, length):
+        if self.zed.grab() == sl.ERROR_CODE.SUCCESS:
+            self.zed.retrieve_image(self.image, sl.VIEW.LEFT)
+            raw = self.image.get_data()
+            frame = raw[:, :self.width, :3].copy()
+            data = frame.tobytes()
+
+            buf = Gst.Buffer.new_allocate(None, len(data), None)
+            buf.fill(0, data)
+            buf.duration = self.duration
+            timestamp = self.number_frames * self.duration
+            buf.pts = buf.dts = int(timestamp)
+            self.number_frames += 1
+
+            retval = self.appsrc.emit("push-buffer", buf)
+            if retval != Gst.FlowReturn.OK:
+                print(f"Push buffer error: {retval}")
+
+
 class MultiCamRTSPServer:
     def __init__(self):
         self.server = GstRtspServer.RTSPServer()
@@ -45,6 +113,11 @@ class MultiCamRTSPServer:
             "/raw360",
             self._make_360_raw_pipeline(CAMERAS["raw360"])
         )
+        
+        
+        factory = ZEDRtspFactory()
+        factory.set_shared(True)
+        self.mounts.add_factory("/zedmini", factory)
 
         # Placeholder for processed 360 view (commented out)
         # self._add_stream("/dynamic360", self._make_placeholder_pipeline())
