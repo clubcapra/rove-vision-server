@@ -14,7 +14,12 @@ CAMERAS = {
         "height": 1080,
         "fps": 30
     },
-    # "frontcam": { ... }  # Add when ready
+    "frontcam": {
+        "device": "/dev/v4l/by-id/usb-Arducam_Technology_Co.__Ltd._Arducam_USB_Camera-video-index0",
+        "width": 1920,
+        "height": 1080,
+        "fps": 30
+    },
     "raw360": {
         "device": "/dev/v4l/by-id/usb-Insta_Insta360_X4_0001-video-index0",
         "width": 2880,
@@ -39,7 +44,11 @@ class MultiCamRTSPServer:
             "/rearcam",
             self._make_arducam_pipeline(**CAMERAS["rearcam"])
         )
-
+        # Frontcam
+        self._add_stream(
+            "/frontcam",
+            self._make_arducam_pipeline(**CAMERAS["frontcam"])
+        )
         # 360 raw feed
         self._add_stream(
             "/raw360",
