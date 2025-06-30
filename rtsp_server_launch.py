@@ -9,27 +9,27 @@ from gi.repository import Gst, GstRtspServer, GObject
 # === Configuration ===
 CAMERAS = {
     "rearcam": {
-        "device": "/dev/video2", # "/dev/v4l/by-id/usb-Arducam_Technology_Co.__Ltd._Arducam_USB_Camera-video-index2",
-        "width": 1920,
-        "height": 1080,
-        "fps": 30
+        "device": "/dev/v4l/by-path/platform-3610000.usb-usb-0:2.1.1:1.0-video-index2",
+        "width": 640,
+        "height": 360,
+        "fps": 25
     },
     "frontcam": {
-        "device": "/dev/video6", # "/dev/v4l/by-id/usb-Arducam_Technology_Co.__Ltd._Arducam_USB_Camera-video-index0",
-        "width": 1920,
-        "height": 1080,
-        "fps": 30
+        "device": "/dev/v4l/by-path/platform-3610000.usb-usb-0:2.1.4:1.0-video-index2",
+        "width": 640,
+        "height": 360,
+        "fps": 25
     },
     "raw360": {
-        "device": "/dev/v4l/by-id/usb-Insta_Insta360_X4_0001-video-index0",
+        "device": "/dev/v4l/by-path/platform-3610000.usb-usb-0:2.4.1:1.0-video-index0",
         "width": 2880,
         "height": 1440,
         "fps": 30
     }
 }
-BITRATE_ARDUCAM = 4000000
-BITRATE_360 = 8000000
-BITRATE_PLACEHOLDER = 2000000
+BITRATE_ARDUCAM = 500
+BITRATE_ZED = 500
+BITRATE_360 = 5000
 
 # === RTSP Server Setup ===
 Gst.init(None)
@@ -44,11 +44,7 @@ class MultiCamRTSPServer:
             "/rearcam",
             self._make_arducam_pipeline(**CAMERAS["rearcam"])
         )
-        # Frontcam
-        self._add_stream(
-            "/frontcam",
-            self._make_arducam_pipeline(**CAMERAS["frontcam"])
-        )
+
         # 360 raw feed
         self._add_stream(
             "/raw360",
