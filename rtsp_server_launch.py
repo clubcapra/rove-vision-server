@@ -20,27 +20,27 @@ Gst.init(None)
 # === Configuration ===
 CAMERAS = {
     "rearcam": {
-        "device": "/dev/video6",
-        "width": 1920,
-        "height": 1080,
-        "fps": 30
+        "device": "/dev/v4l/by-path/platform-3610000.usb-usb-0:2.1.1:1.0-video-index2",
+        "width": 640,
+        "height": 360,
+        "fps": 25
     },
     "frontcam": {
-        "device": "/dev/video2",
-        "width": 1920,
-        "height": 1080,
-        "fps": 30
+        "device": "/dev/v4l/by-path/platform-3610000.usb-usb-0:2.1.4:1.0-video-index2",
+        "width": 640,
+        "height": 360,
+        "fps": 25
     },
     "raw360": {
-        "device": "/dev/insta",
+        "device": "/dev/v4l/by-path/platform-3610000.usb-usb-0:2.4.1:1.0-video-index0",
         "width": 2880,
         "height": 1440,
         "fps": 30
     }
 }
-BITRATE_ARDUCAM = 4000000
-BITRATE_360 = 8000000
-BITRATE_PLACEHOLDER = 2000000
+BITRATE_ARDUCAM = 500
+BITRATE_ZED = 500
+BITRATE_360 = 5000
 
 # === ZED RTSP Factory with Multithreading ===
 class ZEDRtspFactory(GstRtspServer.RTSPMediaFactory):
@@ -64,10 +64,10 @@ class ZEDRtspFactory(GstRtspServer.RTSPMediaFactory):
         init_params.camera_fps = self.fps
         status = self.zed.open(init_params)
         if status != sl.ERROR_CODE.SUCCESS:
-            print("❌ ZED camera failed to open:", status)
+            print("ZED camera failed to open:", status)
             self.zed = None
         else:
-            print("✅ ZED camera initialized")
+            print("ZED camera initialized")
             self.image = sl.Mat()
             self.capture_thread = threading.Thread(target=self._zed_capture_loop, daemon=True)
             self.capture_thread.start()
@@ -128,6 +128,7 @@ class ZEDRtspFactory(GstRtspServer.RTSPMediaFactory):
 class MultiCamRTSPServer:
     def __init__(self):
         self.server = GstRtspServer.RTSPServer()
+        self.server.set_address("192.168.199.41")
         self.mounts = self.server.get_mount_points()
 
         self._add_stream("/rearcam", self._make_arducam_pipeline(**CAMERAS["rearcam"]))
