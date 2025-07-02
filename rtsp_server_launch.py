@@ -12,24 +12,30 @@ CAMERAS = {
         "device": "/dev/v4l/by-path/platform-3610000.usb-usb-0:2.1.1:1.0-video-index2",
         "width": 640,
         "height": 360,
-        "fps": 25
+        "fps": 15
     },
     "frontcam": {
-        "device": "/dev/v4l/by-path/platform-3610000.usb-usb-0:2.1.4:1.0-video-index2",
+        "device": "/dev/v4l/by-path/platform-3610000.usb-usb-0:2.1.3:1.0-video-index2",
         "width": 640,
         "height": 360,
-        "fps": 25
+        "fps": 15
+    },
+    "armcam": {
+        "device": "/dev/v4l/by-path/platform-3610000.usb-usb-0:2.4.2:1.0-video-index0",
+        "width": 1024,
+        "height": 768,
+        "fps": 15
     },
     "raw360": {
         "device": "/dev/v4l/by-path/platform-3610000.usb-usb-0:2.4.1:1.0-video-index0",
-        "width": 2880,
-        "height": 1440,
+        "width": 1920,
+        "height": 1080,
         "fps": 30
     }
 }
 BITRATE_ARDUCAM = 500
-BITRATE_ZED = 500
-BITRATE_360 = 5000
+BITRATE_ARDUCAM = 1000
+BITRATE_360 = 2000
 
 # === RTSP Server Setup ===
 Gst.init(None)
@@ -51,7 +57,7 @@ class MultiCamRTSPServer:
             self._make_360_raw_pipeline(CAMERAS["raw360"])
         )
 
-        # Placeholder for processed 360 view (commented out)
+        # Placeholder for processed 360 view
         # self._add_stream("/dynamic360", self._make_placeholder_pipeline())
 
         self.server.attach(None)
